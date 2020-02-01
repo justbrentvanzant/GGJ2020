@@ -21,18 +21,15 @@
         </div>
         <div id="game" class="hiding">
             <div id="gameCanvas">
+                <div id="gameHeader">
 
+                </div>
             </div>  
-            <div id="chatSection">
-                <div id="chat-text" style="overflow-y:hidden">
-                </div>
-                <form id="chat-form">
-                    <input id="chat-input" type="text" style="width:100%;"></input>
-                </form>
-                <div id="chat-help">
-                    <div>Enter what you think will repair the item! If a word in your input will help, it'll get added to the board. Brainstorm <b>6</b> items with other players to repair the item.</div>
-                </div>
+            <div id="chat-text">
             </div>
+            <form id="chat-form">
+                <input id="chat-input" type="text" style="width:100%;"></input>
+            </form>
         </div>
      
          
@@ -49,15 +46,21 @@
         var loginInput = document.getElementById('login-input')
         var gameCanvas  = document.getElementById('game');
         var login = document.getElementById('login');
+        var gameHeader = document.getElementById('gameHeader');
 
         var socket = io();
        
         socket.on('addToChat',function(data){
             chatText.innerHTML += '<div>' + data + '</div>';
+            chatText.scrollTop = chatText.scrollHeight;
         });
 
         socket.on('addPlayer',function(data){
             crew.innerHTML += '<div>' + data + '</div>';
+        });
+
+         socket.on('addItem',function(data){
+            gameHeader.innerHTML = 'Repairing: ' + data;
         });
         chatForm.onsubmit = function(e){
             e.preventDefault();
@@ -71,7 +74,6 @@
             loginInput.value = '';     
             login.classList.remove("seeking");
             login.classList.add("hiding");
-            
             gameCanvas.classList.add("seeking");
             gameCanvas.classList.remove("hiding");
         }

@@ -20,7 +20,18 @@ var Entity = function(){
     }
     return self;
 }
- 
+
+let gameCounter=  0;
+let state = 0;
+let internalTimer = 0;
+let heldStrings = [];
+let gameData = {
+"encounters":[
+  {"encounter":"Phone", "strings":"screen,circuit board,code,electric tape, battery, charger, cloth, motherboard"}
+]
+}
+const numHeld = 40; 
+
 var Player = function(id){
     var self = Entity();
     self.id = id;
@@ -63,6 +74,12 @@ Player.onConnect = function(socket){
             for(var i in SOCKET_LIST){
                 SOCKET_LIST[i].emit('addPlayer',player.name);
             }
+            for(var i in heldStrings){
+                 SOCKET_LIST[socket.id].emit('addToChat',heldStrings[i]);
+            }
+            if (encounter != "" ) {
+                    SOCKET_LIST[socket.id].emit('addItem',encounter);
+             }
         }
     });  
 }
@@ -86,13 +103,62 @@ io.sockets.on('connection', function(socket){
 
     socket.on('sendMsgToServer',function(data){
         let playerName = Player.list[socket.id].getName();
-        console.log("getting message"+data);
+        let msgSent = playerName + ': ' + data;
+        if (heldStrings.length > numHeld) {
+            heldStrings.splice(0,1);
+            heldStrings.push(msgSent);
+        }
+        else {
+             heldStrings.push(msgSent);
+        }
         for(var i in SOCKET_LIST){
-            SOCKET_LIST[i].emit('addToChat',playerName + ': ' + data);
+            SOCKET_LIST[i].emit('addToChat',msgSent);
         }
     });   
 });
- 
+let encounter = "";
+let accepted = [];
+
+var genNewRound = function(gc){
+  encounter = gameData.encounters[gc].encounter;
+  console.log("encounter:"+encounter)
+  var stringPassed = gameData.encounters[gc].strings;
+  accepted = stringPassed.split(',');
+  if (gc == 0) {
+    gameCounter = 0;
+  }
+  else {
+    gameCounter++;
+  }
+}
+
+var passSecond = function(){
+        internalTimer++;
+        if (state == 0 && internalTimer == 8) {
+            state = 1;
+            genNewRound(gameCounter);
+            
+            //passTimer("game", 28-internalTimer);
+            for(var i in SOCKET_LIST){
+                    SOCKET_LIST[i].emit('addItem',encounter);
+             }
+        }
+        else if (state == 1 && internalTimer == 28) {
+            state = 0;
+            internalTimer = 0;
+            encounter = "";
+            //passTimer("rest", 9);
+        }
+        else if (state == 0 ){
+             //passTimer("rest", 8-internalTimer);
+        }
+        else if (state == 1 ){
+             //passTimer("game", 28-internalTimer);
+        }
+  }      
+
 setInterval(function(){
-},1000/25);
+    passSecond();
+    console.log("Timer: " + internalTimer +" gameCounter: " +gameCounter);
+},1000);
  
