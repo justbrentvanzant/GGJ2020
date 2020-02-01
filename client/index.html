@@ -2,23 +2,37 @@
     <head>
         <title>Repair Crew</title>
          <link rel="stylesheet" type="text/css" href="/client/css/main.css">
-        <link href="https://fonts.googleapis.com/css?family=Comfortaa|Righteous&display=swap" rel="stylesheet">
+       <link href="https://fonts.googleapis.com/css?family=Life+Savers|Quicksand&display=swap" rel="stylesheet">
+
 
     </head>
     <body>
-        <div id="head">
-            <h1>Repair Crew</h1>
+        <div id="head" class="ball">
+            <h1>
+                The Repair Crew!
+            </h1>
+            <div id="crewHolder" class = "container">
+            </div>
         </div> 
-        <div id="game">
+        <div id="login" class="seeking">
+            <form id="login-form">
+                    <input id="login-input" placeholder="Enter your name!" type="text" style="width:100%;"></input>
+            </form>
+        </div>
+        <div id="game" class="hiding">
             <div id="gameCanvas">
 
             </div>  
-            <div id="chat-text" style="width:100%;height:100%;overflow-y:scroll">
-                <div>Enter /{item name} to contribute items</div>
+            <div id="chatSection">
+                <div id="chat-text" style="overflow-y:hidden">
+                </div>
+                <form id="chat-form">
+                    <input id="chat-input" type="text" style="width:100%;"></input>
+                </form>
+                <div id="chat-help">
+                    <div>Enter what you think will repair the item! If a word in your input will help, it'll get added to the board. Brainstorm <b>6</b> items with other players to repair the item.</div>
+                </div>
             </div>
-            <form id="chat-form">
-                <input id="chat-input" type="text" style="width:100%"></input>
-            </form>
         </div>
      
          
@@ -27,10 +41,14 @@
         </div>
         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
     <script>
+        var crew = document.getElementById('crewHolder');
         var chatText = document.getElementById('chat-text');
         var chatInput = document.getElementById('chat-input');
         var chatForm = document.getElementById('chat-form');
-
+        var loginForm = document.getElementById('login-form');
+        var loginInput = document.getElementById('login-input')
+        var gameCanvas  = document.getElementById('game');
+        var login = document.getElementById('login');
 
         var socket = io();
        
@@ -38,33 +56,26 @@
             chatText.innerHTML += '<div>' + data + '</div>';
         });
 
+        socket.on('addPlayer',function(data){
+            crew.innerHTML += '<div>' + data + '</div>';
+        });
         chatForm.onsubmit = function(e){
             e.preventDefault();
             socket.emit('sendMsgToServer',chatInput.value);
             chatInput.value = '';      
         }
-       
-        document.onkeydown = function(event){
-            if(event.keyCode === 68)    //d
-                socket.emit('keyPress',{inputId:'right',state:true});
-            else if(event.keyCode === 83)   //s
-                socket.emit('keyPress',{inputId:'down',state:true});
-            else if(event.keyCode === 65) //a
-                socket.emit('keyPress',{inputId:'left',state:true});
-            else if(event.keyCode === 87) // w
-                socket.emit('keyPress',{inputId:'up',state:true});
-               
+
+        loginForm.onsubmit = function(e){
+            e.preventDefault();
+            socket.emit('nameSelect',{inputId:'name',state:loginInput.value});
+            loginInput.value = '';     
+            login.classList.remove("seeking");
+            login.classList.add("hiding");
+            
+            gameCanvas.classList.add("seeking");
+            gameCanvas.classList.remove("hiding");
         }
-        document.onkeyup = function(event){
-            if(event.keyCode === 68)    //d
-                socket.emit('keyPress',{inputId:'right',state:false});
-            else if(event.keyCode === 83)   //s
-                socket.emit('keyPress',{inputId:'down',state:false});
-            else if(event.keyCode === 65) //a
-                socket.emit('keyPress',{inputId:'left',state:false});
-            else if(event.keyCode === 87) // w
-                socket.emit('keyPress',{inputId:'up',state:false});
-        }   
+       
     </script>
     </body>
 </html>

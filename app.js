@@ -28,18 +28,18 @@ var Player = function(id){
     self.updateInventory = function(type,item){
         if (type == "clear") {
             self.inventory = [];
-            SOCKET_LIST[i].emit('clear',item);
+            SOCKET_LIST[id].emit('clear',item);
         }
         if (type == "remove") {
             let indexToRemove = self.inventory.indexOf(item);
             if (indexToRemove != -1) {
                  self.inventory.splice(indexToRemove, 1);   
-                 SOCKET_LIST[i].emit('removal',item);
+                 SOCKET_LIST[id].emit('removal',item);
             }
         }
         else if (type == "add") {
             self.inventory.push(item); 
-            SOCKET_LIST[i].emit('removal',item);
+            SOCKET_LIST[id].emit('removal',item);
         }
     }
     self.getName = function(){
@@ -53,9 +53,17 @@ Player.list = {};
 //Player connection
 Player.onConnect = function(socket){
     var player = Player(socket.id);
+    for (var i in Player.list) {
+        SOCKET_LIST[socket.id].emit('addPlayer',Player.list[i].name);
+    }
     socket.on('nameSelect',function(data){
-        if(data.inputId === 'name')
+        if(data.inputId === 'name') {
             player.name = data.state;
+            console.log(data.state);
+            for(var i in SOCKET_LIST){
+                SOCKET_LIST[i].emit('addPlayer',player.name);
+            }
+        }
     });  
 }
 
@@ -86,6 +94,5 @@ io.sockets.on('connection', function(socket){
 });
  
 setInterval(function(){
-    console.log("Actually Working");
 },1000/25);
  
