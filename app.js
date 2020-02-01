@@ -25,9 +25,13 @@ let gameCounter=  0;
 let state = 0;
 let internalTimer = 0;
 let heldStrings = [];
+let playerInputs = [];
+const maxEncounters = 2; 
 let gameData = {
 "encounters":[
-  {"encounter":"Phone", "strings":"screen,circuit board,code,electric tape, battery, charger, cloth, motherboard"}
+  {"encounter":"Phone", "strings":"screen,circuit board,code,electric tape, battery, charger, cloth, motherboard"},
+  {"encounter":"Car", "strings":"wheels,screw, window,gas,battery,cone,wrench,air,paint, cloth"},
+  {"encounter":"Computers", "strings":"screwdriver,solder gun,code,wire cutters,keycaps,power,ram,motherboard"}
 ]
 }
 const numHeld = 40; 
@@ -36,23 +40,6 @@ var Player = function(id){
     var self = Entity();
     self.id = id;
     self.name = " ";
-    self.updateInventory = function(type,item){
-        if (type == "clear") {
-            self.inventory = [];
-            SOCKET_LIST[id].emit('clear',item);
-        }
-        if (type == "remove") {
-            let indexToRemove = self.inventory.indexOf(item);
-            if (indexToRemove != -1) {
-                 self.inventory.splice(indexToRemove, 1);   
-                 SOCKET_LIST[id].emit('removal',item);
-            }
-        }
-        else if (type == "add") {
-            self.inventory.push(item); 
-            SOCKET_LIST[id].emit('removal',item);
-        }
-    }
     self.getName = function(){
         return self.name;
     }
@@ -71,17 +58,36 @@ Player.onConnect = function(socket){
         if(data.inputId === 'name') {
             player.name = data.state;
             console.log(data.state);
-            for(var i in SOCKET_LIST){
-                SOCKET_LIST[i].emit('addPlayer',player.name);
-            }
             for(var i in heldStrings){
-                 SOCKET_LIST[socket.id].emit('addToChat',heldStrings[i]);
+                SOCKET_LIST[socket.id].emit('addToChat',heldStrings[i]);
             }
             if (encounter != "" ) {
-                    SOCKET_LIST[socket.id].emit('addItem',encounter);
+                SOCKET_LIST[socket.id].emit('addItem',encounter);
              }
         }
-    });  
+    });
+    socket.on('sendMsgToServer',function(data){
+        let playerName = Player.list[socket.id].getName();
+        let msgSent = playerName + ': ' + data;
+        for (var z in accepted) {
+            if (msgSent.includes(accepted[z])){
+                if (playerInputs.indexOf(accepted[z]) == -1) {
+                    playerInputs.push(accepted[z]);
+                    console.log("Accepted");
+                }
+            }
+        }
+        if (heldStrings.length > numHeld) {
+            heldStrings.splice(0,1);
+            heldStrings.push(msgSent);
+        }
+        else {
+             heldStrings.push(msgSent);
+        }
+        for(var i in SOCKET_LIST){
+            SOCKET_LIST[i].emit('addToChat',msgSent);
+        }
+    });     
 }
 
 Player.onDisconnect = function(socket){
@@ -93,38 +99,23 @@ var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
     socket.id = Math.random();
     SOCKET_LIST[socket.id] = socket;
-   
     Player.onConnect(socket);
-   
     socket.on('disconnect',function(){
         delete SOCKET_LIST[socket.id];
         Player.onDisconnect(socket);
     });
-
-    socket.on('sendMsgToServer',function(data){
-        let playerName = Player.list[socket.id].getName();
-        let msgSent = playerName + ': ' + data;
-        if (heldStrings.length > numHeld) {
-            heldStrings.splice(0,1);
-            heldStrings.push(msgSent);
-        }
-        else {
-             heldStrings.push(msgSent);
-        }
-        for(var i in SOCKET_LIST){
-            SOCKET_LIST[i].emit('addToChat',msgSent);
-        }
-    });   
 });
+
 let encounter = "";
 let accepted = [];
 
 var genNewRound = function(gc){
+  playerInputs = [];
   encounter = gameData.encounters[gc].encounter;
   console.log("encounter:"+encounter)
   var stringPassed = gameData.encounters[gc].strings;
   accepted = stringPassed.split(',');
-  if (gc == 0) {
+  if (gc == maxEncounters) {
     gameCounter = 0;
   }
   else {
@@ -137,11 +128,10 @@ var passSecond = function(){
         if (state == 0 && internalTimer == 8) {
             state = 1;
             genNewRound(gameCounter);
-            
             //passTimer("game", 28-internalTimer);
             for(var i in SOCKET_LIST){
-                    SOCKET_LIST[i].emit('addItem',encounter);
-             }
+                SOCKET_LIST[i].emit('addItem',encounter);
+            }
         }
         else if (state == 1 && internalTimer == 28) {
             state = 0;
@@ -157,8 +147,25 @@ var passSecond = function(){
         }
   }      
 
+var updateInfo = function(){
+    for (var j in SOCKET_LIST) {
+        SOCKET_LIST[j].emit('clearPlayers',"dab");
+        SOCKET_LIST[j].emit('clearInput',"dab");
+        for(var i in Player.list){
+            var playerName = Player.list[i].getName();
+            if (playerName != "")  {
+                SOCKET_LIST[j].emit('addPlayer',playerName);
+            }
+        }
+        for (var i in playerInputs) {
+             SOCKET_LIST[j].emit('addInput',playerInputs[i]);
+        }
+    }
+}
+
 setInterval(function(){
     passSecond();
     console.log("Timer: " + internalTimer +" gameCounter: " +gameCounter);
+    updateInfo();
 },1000);
  

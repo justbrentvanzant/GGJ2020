@@ -7,12 +7,16 @@
 
     </head>
     <body>
-        <div id="head" class="ball">
+        <div id="head">
             <h1>
                 The Repair Crew!
             </h1>
+             <div id="gameHeader" class = "ball container">
+
+                </div>
             <div id="crewHolder" class = "container">
             </div>
+
         </div> 
         <div id="login" class="seeking">
             <form id="login-form">
@@ -21,20 +25,13 @@
         </div>
         <div id="game" class="hiding">
             <div id="gameCanvas">
-                <div id="gameHeader">
-
-                </div>
+               
             </div>  
             <div id="chat-text">
             </div>
             <form id="chat-form">
                 <input id="chat-input" type="text" style="width:100%;"></input>
             </form>
-        </div>
-     
-         
-         <div id="playerInventory">
-           
         </div>
         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
     <script>
@@ -47,6 +44,7 @@
         var gameCanvas  = document.getElementById('game');
         var login = document.getElementById('login');
         var gameHeader = document.getElementById('gameHeader');
+        var canvas = document.getElementById('gameCanvas');
 
         var socket = io();
        
@@ -57,6 +55,16 @@
 
         socket.on('addPlayer',function(data){
             crew.innerHTML += '<div>' + data + '</div>';
+        });
+        socket.on('clearPlayers',function(data){
+            crew.innerHTML ="";
+        });
+
+        socket.on('addInput',function(data){
+            canvas.innerHTML += '<div>' + data + '</div>';
+        });
+        socket.on('clearInput',function(data){
+            canvas.innerHTML ="";
         });
 
          socket.on('addItem',function(data){
